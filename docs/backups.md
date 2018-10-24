@@ -1,19 +1,18 @@
 # Backups
 
 Priam supports both snapshot and incremental backups for Cassandra SSTable
-files and uses S3 to save these files.
+files and uses S3 to save these files. Priam uses S3 multipart upload, which
+uploads large files in parallel.
 
-## Backup file path
+## Backup key organization
 
-To identify backup files and to avoid collision, Priam organizes the files in
-S3 by including time, keyspace name, token, date, DC/region and cluster name.
-Here is the general format:
+Priam organizes objects in S3 as:
 
 ```text
-<App Prefix>/<Region or DC>/<Cluster name>/<Token>/<Date & Time>/<File type>/<Keyspace>/<FileName>
+<Region>/<Cluster name>/<Token>/<Date & Time>/<File type>/<Keyspace>/<FileName>
 ```
 
-Here are valid file types (refer _AbstractBackupPath.BackupFileType_):
+There are three valid file types (refer to _AbstractBackupPath.BackupFileType_):
 
 ```text
 SNAP - Snapshot file
@@ -26,36 +25,29 @@ Here is a sample snapshot file in S3:
 test_backup/eu-west-1/cass_test/37809151880104273718152734159458104939/201202142346/SNAP/MyKeyspace/MyCF-g-265-Data.db
 ```
 
-
-## Multipart upload
-
-Priam leverages the multipart upload feature of S3.  This helps in uploading
-large files in parallel.  Each file is chunked into several parts and each part
-is uploaded in parallel.
-
 ## Compression
 
 Priam uses snappy compression to compress data files.  Each file is chunked and
-compressed on the fly.
+compressed in a streaming fashion, and the compressed data is uploaded to S3
+without being written to disk.
 
 ## Throttling
 
-Throttling of uploads helps reduce disk IO and network IO as well. With Priam
-properties, you can set the Mb/s which are read from the disk.
+Throttling of uploads reduce spikes of disk and network IO. Using Priam
+properties, you can limit the rate at which data is read from disk.
 
 ## SNS Notifications
 
-Priam can send SNS Notifications, pre and post upload of any file to S3. This
-allows a cleaner integration with external service depending on backups which
-are about to be uploaded.
+Priam can send SNS notifications before and after upload of any file to S3.
+This allows a cleaner integration with external services which consume backup
+data stored in S3.
 
 ## Async Uploads
 
-Priam allows user to configure if they wish to do parallel uploads to remote
-file system for snapshots and incrementals. Doing parallel uploads makes your
-backup faster but may use the bandwidth of the instance and thus starve
-Cassandra. Bandwidth used by backups can be controlled by `throttling` them.
-This should be carefully reviewed based on your instance capabilities.
+Priam allows the user to configure parallel uploads of snapshot and incremental
+backups to increase overall throughput. This option is best used in conjunction
+with Priam's throttling features, to ensure that the instance retains enough
+free resources to serve Cassandra queries.
 
 Priam by default does NOT allow async uploads, though our suggestion is to
 enable them on few instances and see the performance and then tune. In our
@@ -72,35 +64,41 @@ usage (even during peak).
 6. **_priam.backup.threads_**: The number of backup threads to be used to upload files to S3. Default: ```2```
 7. **_priam.upload.timeout_**: Uploads are scheduled in `priam.backup.queue.size`. If queue is full then we wait for this time for the queue to have an entry available for queueing the current task. Default: 2 minutes.
 
-# Snapshot or complete backup
+# Snapshot backups
 
-Priam leverages Cassandra's snapshot feature to have an eventually consistent
-backup.  Cassandra's snapshot feature flushes data to disk and hard links all
-SSTable files into a snapshot directory. These files are then picked up by
-Priam and uploaded to S3.  Although snapshotting across the cluster is not
-guaranteed to produce a consistent backup of the cluster, consistency is
-resumed upon restore by Cassandra and running repairs.
+Priam uses Cassandra's snapshot feature to produce a backup which is consistent
+to a single point in time as seen by each Cassandra node. Cassandra snapshots
+flush in-memory data to disk and produce a directory representing the dataset
+as it existed when the snapshot was taken. Priam then picks up these files and
+uploads them to S3.
 
-Priam uses Quartz to schedule all tasks.  Snapshot backups are run as a
-recurring task.  They can also be triggered via REST API (refer API section),
-which is useful during upgrades or maintenance operations.  Snapshots are run
-on a CRON for the entire cluster, at a specific time, ideally during non-peak
-hours. Priam's _backup.hour_ or _backup.cron_ property allows you to set daily
-snapshot time (refer properties). The snapshot backup orchestrates invoking of
-Cassandra **_snapshot_** JMX command, uploading files to S3 and cleaning up the
-directory.
+Because Cassandra is a multi-primary datastore, all Cassandra backup solutions
+will be affected by differences in the dataset that existed at each node when a
+backup was taken. When the dataset is restored, a Cassandra repair is necessary
+iron out the small differences between backed-up Cassandra replicas.
+
+Priam uses Quartz to schedule all tasks. Snapshot backups are run as a
+recurring task.  They can also be triggered via REST API (refer to the API
+section, below), which can be useful for upgrades or maintenance operations.
+Snapshots are run near-simultaneously across a cluster based on Quartz cron
+triggers, ideally configured to run during non-peak hours. Priam's
+_backup.hour_ or _backup.cron_ property allows the operator to set daily
+snapshot time (see [Configuration.md]).
+
+Priam is responsible for every step of the backup lifecycle, including creation
+of the Cassandra backup, upload to S3, and clean-up of the snapshot directory.
 
 ## meta.json
 
 All SSTable files are uploaded individually to S3 with built-in retries on
-failure.  Upon completion, the meta file (_meta.json_) is uploaded which
-contains a reference to all files that belong to the snapshot.   This is then
-used for validation during restore.
+failure. Upon completion, the meta file (_meta.json_) is uploaded, containing a
+reference to all files which belong to the snapshot. This file is used for
+validation during restore.
 
 ## Backup Status Management
 
-Priam by default stores the status of all the snapshot. This is useful to
-determine if the snapshot at a given Instant was successful. It has support to
+By default, Priam stores the status of all the snapshots it has taken. This can
+be used to determine whether a given snapshot succeeded. It has support to
 store status of multiple snapshots for a given date.
 
 The default binding is to store these details to a local file configured via
