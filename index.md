@@ -65,7 +65,7 @@ mid-2011.
   - Throttling
 * Pluggable modules for future enhancements (support for multiple data storage).
 * REST APIs for backup/restore and other operations
-* REST APIs for validating backups. 
+* REST APIs for validating backups.
 * Monitoring of Cassandra health
 * Auto-remediation of common issues
 
@@ -77,13 +77,21 @@ mid-2011.
 
 ## Compatibility
 
-|Priam Branch|Cassandra Version |Description| Javadoc
-| :-----------:| :-----------------: | :---------  |
-|[4.x](https://github.com/Netflix/Priam/tree/4.x)       | C* 4.x    | Alpha: Currently it supports Apache C* 4.x|[link](https://www.javadoc.io/doc/com.netflix.priam/priam/4.0.0-alpha7)
-|[3.11](https://github.com/Netflix/Priam/tree/3.11)     | C* 3.x    | Currently it supports Apache C* 3.x |[link](https://www.javadoc.io/doc/com.netflix.priam/priam/3.11.35)
-|[3.x](https://github.com/Netflix/Priam/tree/3.x)       | C* 2.1.x  | Any minor version of Apache C* 2.1.x and DSE |[link](https://www.javadoc.io/doc/com.netflix.priam/priam/3.1.65)
+|Priam Branch|Cassandra Version |Description                    | Javadoc     |
+|------------|------------------|-------------------------------|-------------|
+|[4.x]       | C* 4.x           | Alpha: Supports Apache C* 4.x | [4.x-docs]  |
+|[3.11]      | C* 3.x           | Supports Apache C* 3.x        | [3.11-docs] |
+|[3.x]       | C* 2.1.x         | Any minor version of Apache C* 2.1.x and DSE
+| [3.x-docs] |
 
-# Authors 
+[4.x](https://github.com/Netflix/Priam/tree/4.x)
+[3.11](https://github.com/Netflix/Priam/tree/3.11)
+[3.x](https://github.com/Netflix/Priam/tree/3.x)
+[4.0-docs](https://www.javadoc.io/doc/com.netflix.priam/priam/4.0.0-alpha7)
+[3.11-docs](https://www.javadoc.io/doc/com.netflix.priam/priam/3.11.35)
+[3.x-docs](https://www.javadoc.io/doc/com.netflix.priam/priam/3.1.65)
+
+# Authors
 1. Arun Agrawal @arunagrawal84
 2. Joseph Lynch @jolynch
 3. Vinay Chella @vinaykumarchella
@@ -104,4 +112,7 @@ specific language governing permissions and limitations under the License.
 
 A Netflix Original Production
 
-[Netflix OSS](http://netflix.github.io/#repo) | [Tech Blog](https://medium.com/netflix-techblog) | [Twitter @NetflixOSS](https://twitter.com/NetflixOSS) | [Jobs](https://jobs.netflix.com/)
+[Netflix OSS](http://netflix.github.io/#repo) | [Tech
+Blog](https://medium.com/netflix-techblog) | [Twitter
+@NetflixOSS](https://twitter.com/NetflixOSS) |
+[Jobs](https://jobs.netflix.com/)
