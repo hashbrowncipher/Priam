@@ -79,17 +79,16 @@ mid-2011.
 
 |Priam Branch|Cassandra Version |Description                    | Javadoc     |
 |------------|------------------|-------------------------------|-------------|
-|[4.x]       | C* 4.x           | Alpha: Supports Apache C* 4.x | [4.x-docs]  |
-|[3.11]      | C* 3.x           | Supports Apache C* 3.x        | [3.11-docs] |
-|[3.x]       | C* 2.1.x         | Any minor version of Apache C* 2.1.x and DSE
-| [3.x-docs] |
+|[4.x]       | C* 4.x           | Alpha: Supports Apache C* 4.x | [link][4.x-docs]  |
+|[3.11]      | C* 3.x           | Supports Apache C* 3.x        | [link][3.11-docs] |
+|[3.x]       | C* 2.1.x         | Any minor version of Apache C* 2.1.x and DSE | [link][3.x-docs] |
 
-[4.x](https://github.com/Netflix/Priam/tree/4.x)
-[3.11](https://github.com/Netflix/Priam/tree/3.11)
-[3.x](https://github.com/Netflix/Priam/tree/3.x)
-[4.0-docs](https://www.javadoc.io/doc/com.netflix.priam/priam/4.0.0-alpha7)
-[3.11-docs](https://www.javadoc.io/doc/com.netflix.priam/priam/3.11.35)
-[3.x-docs](https://www.javadoc.io/doc/com.netflix.priam/priam/3.1.65)
+[4.x]: https://github.com/Netflix/Priam/tree/4.x
+[3.11]: https://github.com/Netflix/Priam/tree/3.11
+[3.x]: https://github.com/Netflix/Priam/tree/3.x
+[4.x-docs]: https://www.javadoc.io/doc/com.netflix.priam/priam/4.0.0-alpha7
+[3.11-docs]: https://www.javadoc.io/doc/com.netflix.priam/priam/3.11.35
+[3.x-docs]: https://www.javadoc.io/doc/com.netflix.priam/priam/3.1.65
 
 # Authors
 1. Arun Agrawal @arunagrawal84
