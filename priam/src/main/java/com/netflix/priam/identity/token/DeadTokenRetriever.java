@@ -111,10 +111,6 @@ public class DeadTokenRetriever extends TokenRetrieverBase implements IDeadToken
             // remove it as we marked it down...
             factory.delete(priamInstance);
 
-            // use entry in the token database always.
-            // this can cause "can't replace live token errors.
-            this.replacedIp = priamInstance.getHostIP();
-
             PriamInstance result;
             try {
                 result =

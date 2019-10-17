@@ -39,7 +39,13 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import com.netflix.priam.utils.SystemUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,6 +154,15 @@ public class InstanceIdentity {
         if (myInstance == null) {
             logger.info("unable to grab a dead token. trying to grab a pregenerated token.");
             myInstance = grabPreGeneratedToken();
+        }
+
+        if (null != myInstance) {
+            String replacedIp = findReplaceIp(
+                    factory.getAllIds(config.getAppName()),
+                    myInstance.getToken(),
+                    myInstance.getDC()
+            );
+            setReplacedIp(replacedIp);
         }
 
         // Grab a new token
@@ -362,5 +377,96 @@ public class InstanceIdentity {
 
     private static boolean isInstanceDummy(PriamInstance instance) {
         return instance.getInstanceId().equals(DUMMY_INSTANCE_ID);
+    }
+
+    private String findReplaceIp(List<PriamInstance> allIds, String token, String dc)
+            throws Exception {
+        // Avoid using dead instance who we are trying to replace (duh!!)
+        // Avoid other regions instances to avoid communication over public ip address.
+        List<PriamInstance> eligibleInstances =
+                allIds.parallelStream()
+                        .filter(priamInstance -> !priamInstance.getToken().equalsIgnoreCase(token))
+                        .filter(priamInstance -> priamInstance.getDC().equalsIgnoreCase(dc))
+                        .collect(Collectors.toList());
+        // We want to get IP from min 1, max 3 instances to ensure we are not relying on gossip of a
+        // single instance.
+        // Good idea to shuffle so we are not talking to same instances every time.
+        Collections.shuffle(eligibleInstances);
+        // Potential issue could be when you have about 50% of your cluster C* DOWN or trying to be
+        // replaced.
+        // Think of a major disaster hitting your cluster. In that scenario chances of instance
+        // hitting DOWN C* are much much higher.
+        // In such a case you should rely on @link{CassandraConfig#setReplacedIp}.
+        int noOfInstancesGossipShouldMatch = Math.max(1, Math.min(3, eligibleInstances.size()));
+        int noOfInstancesWithGossipMatch = 0;
+        String replace_ip = null, ip = null;
+        for (PriamInstance ins : eligibleInstances) {
+            logger.info("Calling getIp on hostname[{}] and token[{}]", ins.getHostName(), token);
+            ip = getIp(ins.getHostName(), token);
+            if (StringUtils.isEmpty(replace_ip)) replace_ip = ip;
+            if (!StringUtils.isEmpty(replace_ip) && !StringUtils.isEmpty(ip)) {
+                if (replace_ip.equalsIgnoreCase(ip)) {
+                    noOfInstancesWithGossipMatch++;
+                    if (noOfInstancesWithGossipMatch >= noOfInstancesGossipShouldMatch) {
+                        logger.info(
+                                "Using replace_ip: {} as # of required gossip info match: {}",
+                                replace_ip,
+                                noOfInstancesGossipShouldMatch);
+                        return replace_ip;
+                    }
+                } else
+                    throw new Exception(
+                            String.format(
+                                    "Unexpected Exception: Gossip info from hosts are not matching: found {} and {}",
+                                    replace_ip,
+                                    ip));
+            }
+        }
+        logger.warn(
+                "Return null: Unable to find enough instances where gossip match. Required: {}",
+                noOfInstancesGossipShouldMatch);
+        return null;
+    }
+
+    private String getIp(String host, String token) {
+        String response = null;
+        try {
+            response = SystemUtils.getDataFromUrl(getGossipInfoURL(host));
+
+            String inputToken = String.format("[%s]", token);
+            JSONParser parser = new JSONParser();
+            JSONArray jsonObject = (JSONArray) parser.parse(response);
+
+            for (Object key : jsonObject) {
+                JSONObject msg = (JSONObject) key;
+
+                // Ensure that we are not trying to replace a NORMAL token and token of that
+                // instance matches what we want to replace.
+                if (msg.get("STATUS") == null
+                        || msg.get("STATUS").toString().equalsIgnoreCase("NORMAL")
+                        || msg.get("TOKENS") == null
+                        || msg.get("PUBLIC_IP") == null
+                        || !msg.get("TOKENS").toString().equals(inputToken)) {
+                    continue;
+                }
+
+                logger.info(
+                        "Using gossip info from host[{}] and token[{}], the replaced address is : [{}]",
+                        host,
+                        token,
+                        msg.get("PUBLIC_IP"));
+                return (String) msg.get("PUBLIC_IP");
+            }
+        } catch (Exception e) {
+            logger.info(
+                    "Error in reaching out to host: [{}} or parsing response from host: {}",
+                    host,
+                    response);
+        }
+        return null;
+    }
+
+    private String getGossipInfoURL(String host) {
+        return "http://" + host + ":8080/Priam/REST/v1/cassadmin/gossipinfo";
     }
 }
