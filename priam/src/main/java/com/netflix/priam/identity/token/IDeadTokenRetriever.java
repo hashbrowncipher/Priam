@@ -23,11 +23,6 @@ public interface IDeadTokenRetriever {
     PriamInstance get() throws Exception;
 
     /*
-     * @return the IP address of the dead instance to which we will acquire its token
-     */
-    String getReplaceIp();
-
-    /*
      * @param A map of the rac for each instance.
      */
     void setLocMap(ListMultimap<String, PriamInstance> locMap);

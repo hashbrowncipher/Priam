@@ -150,31 +150,6 @@ public class DeadTokenRetrieverTest {
         };
     }
 
-    // @Test
-    public void testReplacementGossipMatch(@Mocked SystemUtils systemUtils) throws Exception {
-        List<PriamInstance> allInstances = getInstances(6);
-        List<String> racMembership = getRacMembership(2);
-        racMembership.add(instanceInfo.getInstanceId());
-        String gossipResponse =
-                "[{\"TOKENS\":\"[1]\",\"PUBLIC_IP\":\"127.0.0.1\",\"RACK\":\"az1\",\"STATUS\":\"NORMAL\",\"DC\":\"us-east-1\"},{\"TOKENS\":\"[2]\",\"PUBLIC_IP\":\"127.0.0.2\",\"RACK\":\"az1\",\"STATUS\":\"NORMAL\",\"DC\":\"us-east-1\"},{\"TOKENS\":\"[3]\",\"PUBLIC_IP\":\"127.0.0.3\",\"RACK\":\"az1\",\"STATUS\":\"shutdown\",\"DC\":\"us-east-1\"},{\"TOKENS\":\"[4]\",\"PUBLIC_IP\":\"127.0.0.4\",\"RACK\":\"az2\",\"STATUS\":\"NORMAL\",\"DC\":\"us-east-1\"},{\"TOKENS\":\"[5]\",\"PUBLIC_IP\":\"127.0.0.5\",\"RACK\":\"az2\",\"STATUS\":\"NORMAL\",\"DC\":\"us-east-1\"},{\"TOKENS\":\"[6]\",\"PUBLIC_IP\":\"127.0.0.6\",\"RACK\":\"az2\",\"STATUS\":\"NORMAL\",\"DC\":\"us-east-1\"}]";
-        new Expectations() {
-            {
-                factory.getAllIds(anyString);
-                result = allInstances;
-                membership.getRacMembership();
-                result = racMembership;
-                SystemUtils.getDataFromUrl(anyString);
-                returns(gossipResponse, gossipResponse, null, gossipResponse);
-            }
-        };
-        deadTokenRetriever =
-                new DeadTokenRetriever(
-                        factory, membership, configuration, new FakeSleeper(), instanceInfo);
-        PriamInstance priamInstance = deadTokenRetriever.get();
-        Assert.assertNotNull(priamInstance);
-        Assert.assertEquals("127.0.0.3", deadTokenRetriever.getReplaceIp());
-    }
-
     private List<PriamInstance> getInstances(int noOfInstances) {
         List<PriamInstance> allInstances = Lists.newArrayList();
         for (int i = 1; i <= noOfInstances; i++)

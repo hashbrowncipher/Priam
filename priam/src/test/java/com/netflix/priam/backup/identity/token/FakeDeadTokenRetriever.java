@@ -30,12 +30,6 @@ class FakeDeadTokenRetriever implements IDeadTokenRetriever {
     }
 
     @Override
-    public String getReplaceIp() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public void setLocMap(ListMultimap<String, PriamInstance> locMap) {
         // TODO Auto-generated method stub
 

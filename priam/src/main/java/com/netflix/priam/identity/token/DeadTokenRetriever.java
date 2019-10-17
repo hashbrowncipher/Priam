@@ -33,7 +33,6 @@ public class DeadTokenRetriever extends TokenRetrieverBase implements IDeadToken
     private final IConfiguration config;
     private final Sleeper sleeper;
     // The IP address of the dead instance to which we will acquire its token
-    private String replacedIp;
     private ListMultimap<String, PriamInstance> locMap;
     private final InstanceInfo instanceInfo;
 
@@ -136,22 +135,11 @@ public class DeadTokenRetriever extends TokenRetrieverBase implements IDeadToken
                 throw ex;
             }
 
-            logger.info(
-                    "Acquired token: "
-                            + priamInstance.getToken()
-                            + " and we will replace with replacedIp: "
-                            + replacedIp);
-
             return result;
         }
 
         logger.info("This node was NOT able to acquire any dead token");
         return null;
-    }
-
-    @Override
-    public String getReplaceIp() {
-        return this.replacedIp;
     }
 
     @Override
